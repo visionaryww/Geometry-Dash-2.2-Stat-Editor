@@ -3,7 +3,7 @@
 #include <tlhelp32.h>
 #include <iostream>
 #include <cstdint>
-#include <print>
+#include <iomanip>
 
 class driver {
 private:
@@ -11,6 +11,7 @@ private:
 	HANDLE hProc = NULL;
 
 	bool attached = false;
+	uintptr_t module_size = 0;
 
 public:
 	uintptr_t base = NULL;
@@ -42,6 +43,7 @@ public:
 						if (wcscmp(ModuleEntry32.szModule, procname) == 0)
 						{
 							this->base = reinterpret_cast<uint64_t>(ModuleEntry32.modBaseAddr);
+							this->module_size = static_cast<uintptr_t>(ModuleEntry32.modBaseSize);
 							break;
 						}
 					}
@@ -54,7 +56,8 @@ public:
 		}
 		
 		if (!this->base || !this->hProc)
-			std::println("Failed to get process info!\nBase Address: {:#x}, hProc: {:#x}", this->base, reinterpret_cast<uintptr_t>(this->hProc));
+			std::cerr << "Failed to get process info!\nBase Address: 0x" << std::hex << this->base
+				<< ", hProc: 0x" << reinterpret_cast<uintptr_t>(this->hProc) << std::dec << "\n";
 		else
 			attached = true;
 
@@ -69,6 +72,11 @@ public:
 	bool is_attached() const
 	{
 		return this->attached;
+	}
+
+	uintptr_t get_module_size() const
+	{
+		return this->module_size;
 	}
 
 	HANDLE get_hproc() const
@@ -93,8 +101,10 @@ public:
 	template<typename T>
 	__declspec(noinline) T read(void* address)
 	{
-		T ret;
-		read_memory(address, &ret, sizeof(T));
+		T ret{};
+		if (read_memory(address, &ret, sizeof(T)) != sizeof(T))
+			return T{};
+
 		return ret;
 	}
 

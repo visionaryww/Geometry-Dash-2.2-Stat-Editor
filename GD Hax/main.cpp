@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <stdexcept>
-#include <print>
+#include <iomanip>
 
 #include "memory.hpp"
 #include "GDExploits.hpp"
@@ -18,7 +18,7 @@ static void init_console()
 
 inline void print_stat_row(int index, const char* stat)
 {
-    std::print(" {:2}) {:<25}", index, stat);
+    std::cout << " " << std::setw(2) << index << ") " << std::left << std::setw(25) << stat << std::right;
 }
 
 int read_int(const std::string& prompt)
@@ -26,7 +26,7 @@ int read_int(const std::string& prompt)
     int value;
     while (true)
     {
-        std::print("{}", prompt);
+        std::cout << prompt;
         std::string input;
         std::getline(std::cin, input);
 
@@ -37,11 +37,11 @@ int read_int(const std::string& prompt)
         }
         catch (const std::invalid_argument&)
         {
-            std::println("Invalid input. Please enter an integer.");
+            std::cout << "Invalid input. Please enter an integer.\n";
         }
         catch (const std::out_of_range&)
         {
-            std::println("Number is out of range. Please enter a valid integer.");
+            std::cout << "Number is out of range. Please enter a valid integer.\n";
         }
     }
 }
@@ -51,7 +51,7 @@ stat_edits::StatType try_parse_input()
     std::string input;
     while (true)
     {
-        std::print("\nInput: ");
+        std::cout << "\nInput: ";
         std::getline(std::cin, input);
 
         if (input.size() == 1 && tolower(input[0]) == 'q')
@@ -71,20 +71,20 @@ stat_edits::StatType try_parse_input()
                 if (stat_edits::StatType::NONE < result && result <= stat_edits::StatType::TOTAL_COUNT)
                     return result;
 
-                std::println(CLEAR_SCREEN "Invalid input. Input a value that corresponds to a stat.");
+                std::cout << CLEAR_SCREEN "Invalid input. Input a value that corresponds to a stat.\n";
             }
             else
             {
-                std::println(CLEAR_SCREEN "Invalid input. Please enter only an integer.");
+                std::cout << CLEAR_SCREEN "Invalid input. Please enter only an integer.\n";
             }
         }
         catch (const std::invalid_argument&)
         {
-            std::println(CLEAR_SCREEN "Invalid input. Please enter an integer.");
+            std::cout << CLEAR_SCREEN "Invalid input. Please enter an integer.\n";
         }
         catch (const std::out_of_range&)
         {
-            std::println(CLEAR_SCREEN "Number is out of range. Please enter a valid integer.");
+            std::cout << CLEAR_SCREEN "Number is out of range. Please enter a valid integer.\n";
         }
 
         return stat_edits::StatType::INVALID;
@@ -98,7 +98,7 @@ int main()
     auto game = driver(L"GeometryDash.exe");
     if (!game.is_attached())
     {
-        std::println("Failed to find game process!");
+        std::cout << "Failed to find game process!\n";
         PAUSE_EXIT();
         return EXIT_FAILURE;
     }
@@ -108,27 +108,27 @@ int main()
         stat_edits::StatType input = stat_edits::StatType::INVALID;
         while (input < 0 || total_options < input)
         {
-            std::println("Input 'q' to exit\nSelect a stat to modify [1 - {}]:", total_options);
+            std::cout << "Input 'q' to exit\nSelect a stat to modify [1 - " << total_options << "]:" << "\n";
 
             for (int i = 1; i <= total_options; ++i)
             {
                 print_stat_row(i, stat_edits::stat_types[i - 1]);
 
                 if (i % 2 == 0)
-                    std::print("\n");
+                    std::cout << "\n";
             }
 
             input = try_parse_input();
             if (input == stat_edits::StatType::NONE)
             {
-                std::println("Exiting...");
+                std::cout << "Exiting...\n";
                 return EXIT_SUCCESS;
             }
         }
 
-        std::println("\nInput value to set for stat '{}'!", stat_edits::stat_types[input - 1]);
-        int value = read_int(std::format("Value [{} - {}]: ", INT_MIN, INT_MAX));
-        std::println("Setting '{}' value to {}!", stat_edits::stat_types[input - 1], value);
+        std::cout << "\nInput value to set for stat '" << stat_edits::stat_types[input - 1] << "'!\n";
+        int value = read_int("Value [" + std::to_string(INT_MIN) + " - " + std::to_string(INT_MAX) + "]: ");
+        std::cout << "Setting '" << stat_edits::stat_types[input - 1] << "' value to " << value << "!\n";
 
         // since those random achievements aren't in the list anymore, adjust to fix gaunlets and list rewards since they come after
         if (input >= 30)
@@ -142,7 +142,7 @@ int main()
         stat_edits::StatLinkedList* stat_info_delta_addr = stat_edits::get_stat_addr(game, stat_info_delta, input);
         if (stat_info_delta_addr == nullptr)
         {
-            std::println("Failed to get the delta address for the specified stat type!");
+            std::cout << "Failed to get the delta address for the specified stat type!\n";
             PAUSE_EXIT();
             return EXIT_FAILURE;
         }
@@ -152,16 +152,16 @@ int main()
         stat_edits::StatLinkedList* stat_info_addr = stat_edits::get_stat_addr(game, stat_info, input);
         if (stat_info_addr == nullptr)
         {
-            std::println("Failed to get the stat value address for the specified stat type!");
+            std::cout << "Failed to get the stat value address for the specified stat type!\n";
             PAUSE_EXIT();
             return EXIT_FAILURE;
         }
 
         game.write<uint32_t>(&stat_info_addr->value, value + delta);
 
-        std::println("Success! Press any key to continue!");
+        std::cout << "Success! Press any key to continue!\n";
         PAUSE();
-        std::print(CLEAR_SCREEN);
+        std::cout << CLEAR_SCREEN;
     }
 
     return EXIT_SUCCESS;
