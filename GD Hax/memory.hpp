@@ -5,6 +5,15 @@
 #include <cstdint>
 #include <iomanip>
 
+struct MemRange
+{
+    uintptr_t start;
+    uintptr_t end;
+};
+
+static constexpr uintptr_t STAT_OFFSET = 0x248;
+static constexpr uintptr_t STAT_DELTA_OFFSET = 0x288;
+
 class driver {
 private:
 	const char* modname = nullptr;
